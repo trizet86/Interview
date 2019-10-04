@@ -59,6 +59,7 @@ public class VectorList<E> implements Iterable<E> {
         Node<E> addFirst(E element) {
             Node<E> newNode = new Node<>(element);
             newNode.next = this;
+            prev = newNode;
             return newNode;
         }
 
