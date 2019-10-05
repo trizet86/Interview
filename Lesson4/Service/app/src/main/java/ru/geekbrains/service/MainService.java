@@ -1,56 +1,73 @@
 package ru.geekbrains.service;
 
-import android.app.IntentService;
+import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.os.IBinder;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.TaskStackBuilder;
+import android.util.Log;
 
-// Служба
-public class MainService extends IntentService {
-    int messageId=0;
+public class MainService extends Service {
 
-    public MainService() {
-        super("MainService");
-    }
-    @Override
-    protected void onHandleIntent(@Nullable Intent intent) {
-        makeNote("onHandleIntent");
-    }
+    private static final String TAG = "MainService";
+    private ServiceBinder serviceBinder;
+    private NotificationManager notificationManager;
+
     @Override
     public void onCreate() {
-        makeNote("onCreate");
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         super.onCreate();
     }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        makeNote("onStartCommand");
-        return super.onStartCommand(intent, flags, startId);
+        Log.i(TAG, "onStartCommand");
+        return Service.START_STICKY;
     }
+
     @Override
     public void onDestroy() {
-        makeNote("onDestroy");
+        Log.i(TAG, "onDestroy");
         super.onDestroy();
     }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        Log.i(TAG, "onBind");
+        if (serviceBinder == null){
+            serviceBinder = new ServiceBinder();
+        }
+        return serviceBinder;
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.i(TAG, "onUnbind");
+        return false;
+    }
+
     // вывод уведомления в строке состояния
-    private void makeNote(String message){
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
-                                                .setSmallIcon(R.mipmap.ic_launcher)
-                                                .setContentTitle("Main service notification")
-                                                .setContentText(message);
-        Intent resultIntent = new Intent(this, MainService.class);
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addNextIntent(resultIntent);
-        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(
-                        0,
-                        PendingIntent.FLAG_UPDATE_CURRENT
-                );
-        builder.setContentIntent(resultPendingIntent);
-        NotificationManager notificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(messageId++, builder.build());
+    public void showNotification(String text, @DrawableRes int icon, int notifyId) {
+        Notification notification = new Notification.Builder(getApplicationContext())
+                //.setContentTitle("Progress")
+                .setContentText(text)
+                //.setTicker("Notification!")
+                .setWhen(System.currentTimeMillis())
+                .setDefaults(Notification.DEFAULT_SOUND)
+                .setAutoCancel(true)
+                .setSmallIcon(icon)
+                .build();
+
+        notificationManager.notify(notifyId, notification);
+    }
+
+    public class ServiceBinder extends android.os.Binder {
+        public MainService getService(){
+            return MainService.this;
+        }
     }
 }
